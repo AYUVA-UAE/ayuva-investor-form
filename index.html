@@ -1023,60 +1023,53 @@
     submitBtn.disabled = true;
     submitBtn.style.opacity = '0.6';
 
-    // Convert passport to base64
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const base64Full = e.target.result;
-      const base64Data = base64Full.split(',')[1]; // Remove data:xxx;base64, prefix
+    const formData = {
+      fullname: document.getElementById('fullname').value,
+      furigana: document.getElementById('furigana').value,
+      address: document.getElementById('address').value,
+      phone: document.getElementById('phone').value,
+      email: document.getElementById('email').value,
+      investmentTier: tierNames[selectedTierName],
+      investmentUnits: units,
+      investmentAmount: units * selectedTierPrice,
+      passportName: file.name,
+      notes: document.getElementById('notes').value,
+      submittedAt: new Date().toISOString()
+    };
 
-      const formData = {
-        fullname: document.getElementById('fullname').value,
-        furigana: document.getElementById('furigana').value,
-        address: document.getElementById('address').value,
-        phone: document.getElementById('phone').value,
-        email: document.getElementById('email').value,
-        investmentTier: tierNames[selectedTierName],
-        investmentUnits: units,
-        investmentAmount: units * selectedTierPrice,
-        passportName: file.name,
-        passportData: base64Data,
-        notes: document.getElementById('notes').value,
-        submittedAt: new Date().toISOString()
-      };
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const SCRIPT_URL = 'https://script.google.com/a/macros/exceed-re.ae/s/AKfycbzgsHjkO4LdAC56S5lKHkPwT1jjzbXIyvfdoDBx-If-Mf6aNGxL3bnKfsrF1sUEoNq1yw/exec';
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // ⬇️ PASTE YOUR GOOGLE APPS SCRIPT URL BELOW ⬇️
-      const SCRIPT_URL = 'https://script.google.com/a/macros/exceed-re.ae/s/AKfycbzgsHjkO4LdAC56S5lKHkPwT1jjzbXIyvfdoDBx-If-Mf6aNGxL3bnKfsrF1sUEoNq1yw/exec';
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // Create hidden iframe + form to submit (bypasses CORS)
+    const iframe = document.createElement('iframe');
+    iframe.name = 'hiddenFrame_' + Date.now();
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
 
-      // Create hidden iframe + form to submit (bypasses CORS)
-      const iframe = document.createElement('iframe');
-      iframe.name = 'hiddenFrame';
-      iframe.style.display = 'none';
-      document.body.appendChild(iframe);
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = SCRIPT_URL;
+    form.target = iframe.name;
 
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = SCRIPT_URL;
-      form.target = 'hiddenFrame';
-
+    // Send each field as separate form parameters
+    for (const [key, val] of Object.entries(formData)) {
       const input = document.createElement('input');
       input.type = 'hidden';
-      input.name = 'payload';
-      input.value = JSON.stringify(formData);
+      input.name = key;
+      input.value = val;
       form.appendChild(input);
+    }
 
-      document.body.appendChild(form);
-      form.submit();
+    document.body.appendChild(form);
+    form.submit();
 
-      // Show success after short delay
-      setTimeout(() => {
-        document.getElementById('investorForm').style.display = 'none';
-        document.querySelector('.progress-bar').style.display = 'none';
-        document.getElementById('successScreen').style.display = 'block';
-      }, 2000);
-    };
-    reader.readAsDataURL(file);
+    // Show success after short delay
+    setTimeout(() => {
+      document.getElementById('investorForm').style.display = 'none';
+      document.querySelector('.progress-bar').style.display = 'none';
+      document.getElementById('successScreen').style.display = 'block';
+    }, 2000);
   }
 </script>
 
