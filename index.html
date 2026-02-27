@@ -1017,13 +1017,14 @@
       return;
     }
 
-    // Show loading state
     const submitBtn = document.querySelector('.btn-submit');
     submitBtn.textContent = '送信中...';
     submitBtn.disabled = true;
     submitBtn.style.opacity = '0.6';
 
-    const formData = {
+    const SCRIPT_URL = 'https://script.google.com/a/macros/exceed-re.ae/s/AKfycbzgsHjkO4LdAC56S5lKHkPwT1jjzbXIyvfdoDBx-If-Mf6aNGxL3bnKfsrF1sUEoNq1yw/exec';
+
+    const textData = {
       fullname: document.getElementById('fullname').value,
       furigana: document.getElementById('furigana').value,
       address: document.getElementById('address').value,
@@ -1037,29 +1038,49 @@
       submittedAt: new Date().toISOString()
     };
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const SCRIPT_URL = 'https://script.google.com/a/macros/exceed-re.ae/s/AKfycbzgsHjkO4LdAC56S5lKHkPwT1jjzbXIyvfdoDBx-If-Mf6aNGxL3bnKfsrF1sUEoNq1yw/exec';
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // Step 1: Compress passport image
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        // Resize to max 600px wide
+        const maxW = 600;
+        let w = img.width, h = img.height;
+        if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.4).split(',')[1];
 
-    // Build URL with query parameters (most reliable cross-origin method)
-    const params = new URLSearchParams(formData).toString();
-    const fullUrl = SCRIPT_URL + '?' + params;
+        // Step 2: Send text data via GET
+        const params1 = new URLSearchParams(textData).toString();
+        const script1 = document.createElement('script');
+        script1.src = SCRIPT_URL + '?' + params1;
+        document.body.appendChild(script1);
 
-    // Send via script tag (bypasses all CORS restrictions)
-    const script = document.createElement('script');
-    script.src = fullUrl;
-    script.onload = function() {
-      document.getElementById('investorForm').style.display = 'none';
-      document.querySelector('.progress-bar').style.display = 'none';
-      document.getElementById('successScreen').style.display = 'block';
+        // Step 3: Send passport image via GET (after short delay)
+        setTimeout(() => {
+          const passportData = {
+            type: 'passport',
+            fullname: textData.fullname,
+            passportName: file.name,
+            passportData: compressedBase64
+          };
+          const params2 = new URLSearchParams(passportData).toString();
+          const script2 = document.createElement('script');
+          script2.src = SCRIPT_URL + '?' + params2;
+          script2.onload = script2.onerror = function() {
+            document.getElementById('investorForm').style.display = 'none';
+            document.querySelector('.progress-bar').style.display = 'none';
+            document.getElementById('successScreen').style.display = 'block';
+          };
+          document.body.appendChild(script2);
+        }, 2000);
+      };
+      img.src = e.target.result;
     };
-    script.onerror = function() {
-      // Even if script "errors" (expected), data was still sent via GET
-      document.getElementById('investorForm').style.display = 'none';
-      document.querySelector('.progress-bar').style.display = 'none';
-      document.getElementById('successScreen').style.display = 'block';
-    };
-    document.body.appendChild(script);
+    reader.readAsDataURL(file);
   }
 </script>
 
