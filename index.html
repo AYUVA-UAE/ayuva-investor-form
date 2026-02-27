@@ -1041,35 +1041,25 @@
     const SCRIPT_URL = 'https://script.google.com/a/macros/exceed-re.ae/s/AKfycbzgsHjkO4LdAC56S5lKHkPwT1jjzbXIyvfdoDBx-If-Mf6aNGxL3bnKfsrF1sUEoNq1yw/exec';
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    // Create hidden iframe + form to submit (bypasses CORS)
-    const iframe = document.createElement('iframe');
-    iframe.name = 'hiddenFrame_' + Date.now();
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
+    // Build URL with query parameters (most reliable cross-origin method)
+    const params = new URLSearchParams(formData).toString();
+    const fullUrl = SCRIPT_URL + '?' + params;
 
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = SCRIPT_URL;
-    form.target = iframe.name;
-
-    // Send each field as separate form parameters
-    for (const [key, val] of Object.entries(formData)) {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = key;
-      input.value = val;
-      form.appendChild(input);
-    }
-
-    document.body.appendChild(form);
-    form.submit();
-
-    // Show success after short delay
-    setTimeout(() => {
+    // Send via script tag (bypasses all CORS restrictions)
+    const script = document.createElement('script');
+    script.src = fullUrl;
+    script.onload = function() {
       document.getElementById('investorForm').style.display = 'none';
       document.querySelector('.progress-bar').style.display = 'none';
       document.getElementById('successScreen').style.display = 'block';
-    }, 2000);
+    };
+    script.onerror = function() {
+      // Even if script "errors" (expected), data was still sent via GET
+      document.getElementById('investorForm').style.display = 'none';
+      document.querySelector('.progress-bar').style.display = 'none';
+      document.getElementById('successScreen').style.display = 'block';
+    };
+    document.body.appendChild(script);
   }
 </script>
 
